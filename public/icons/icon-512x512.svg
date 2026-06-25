@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="76.8" fill="#7DD3FC"/>
+  <!-- Red balloon -->
+  <ellipse cx="194.56" cy="199.68" rx="100.352" ry="121.856" fill="#EF4444"/>
+  <ellipse cx="179.2" cy="163.84" rx="21.504" ry="34.816" fill="rgba(255,255,255,0.4)" transform="rotate(-20 179.2 163.84)"/>
+  <!-- Green balloon -->
+  <ellipse cx="327.68" cy="225.28" rx="93.18400000000001" ry="113.15200000000002" fill="#22C55E"/>
+  <ellipse cx="312.32" cy="189.44" rx="18.6368" ry="31.334400000000002" fill="rgba(255,255,255,0.4)" transform="rotate(-20 312.32 189.44)"/>
+  <!-- Yellow balloon (main/center) -->
+  <ellipse cx="256" cy="235.52" rx="114.68800000000002" ry="139.264" fill="#FACC15"/>
+  <ellipse cx="240.64" cy="194.56" rx="22.937600000000003" ry="38.2976" fill="rgba(255,255,255,0.45)" transform="rotate(-20 240.64 194.56)"/>
+  <!-- Strings -->
+  <line x1="194.56" y1="338.432" x2="256" y2="409.6" stroke="#888" stroke-width="2.56" stroke-linecap="round"/>
+  <line x1="327.68" y1="329.728" x2="256" y2="409.6" stroke="#888" stroke-width="2.56" stroke-linecap="round"/>
+  <line x1="256" y1="355.84000000000003" x2="256" y2="409.6" stroke="#888" stroke-width="2.56" stroke-linecap="round"/>
+  <!-- Star -->
+  <text x="256" y="276.48" text-anchor="middle" font-size="61.44" fill="white" font-family="Arial">&#9733;</text>
+</svg>

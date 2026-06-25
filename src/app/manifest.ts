@@ -1,0 +1,43 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Balloon Pop Kids",
+    short_name: "BalloonPop",
+    description:
+      "Jogo educativo para crianças de 3 a 8 anos. Estoure balões e aprenda letras, números, cores e animais!",
+    start_url: "/",
+    display: "standalone",
+    orientation: "portrait",
+    background_color: "#7DD3FC",
+    theme_color: "#0EA5E9",
+    categories: ["education", "games", "kids"],
+    lang: "pt-BR",
+    icons: [
+      {
+        src: "/icons/icon-192x192.svg",
+        sizes: "192x192",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-512x512.svg",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/icons/icon-maskable-192x192.svg",
+        sizes: "192x192",
+        type: "image/svg+xml",
+        purpose: "maskable",
+      },
+      {
+        src: "/icons/icon-maskable-512x512.svg",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "maskable",
+      },
+    ],
+  };
+}

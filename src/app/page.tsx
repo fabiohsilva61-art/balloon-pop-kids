@@ -1,65 +1,85 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { BalloonSVG } from "@/components/ui/BalloonSVG";
+import { Button } from "@/components/ui/Button";
+import { SoundToggle } from "@/components/ui/SoundToggle";
+import { BackgroundBalloons } from "@/components/ui/BackgroundBalloons";
+import { filterBadWords } from "@/lib/constants";
+
+export default function MenuPage() {
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  function handlePlay() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    if (!filterBadWords(trimmed)) {
+      setError("Escolha outro nome, por favor!");
+      return;
+    }
+
+    setError("");
+    const params = new URLSearchParams({ player: trimmed });
+    router.push(`/play?${params.toString()}`);
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <SoundToggle />
+      <BackgroundBalloons />
+
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center gap-6 p-6">
+        <div className="flex gap-3">
+          <BalloonSVG color="#EF4444" size={56} delay={0} />
+          <BalloonSVG color="#FACC15" size={72} delay={0.2} />
+          <BalloonSVG color="#22C55E" size={56} delay={0.4} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-lg text-center leading-tight">
+          Balloon Pop
+          <br />
+          <span className="text-yellow-300">Kids</span>
+        </h1>
+
+        <p className="text-lg md:text-xl text-white/80 text-center max-w-sm">
+          Estoure balões e aprenda letras, números, cores e animais!
+        </p>
+
+        <div className="w-full max-w-xs mt-2">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError("");
+            }}
+            onKeyDown={(e) => e.key === "Enter" && handlePlay()}
+            placeholder="Seu nome ou apelido"
+            maxLength={20}
+            autoComplete="off"
+            className="w-full rounded-2xl bg-white/90 px-6 py-4 text-center text-xl font-medium text-gray-800 placeholder-gray-400 outline-none ring-2 ring-transparent focus:ring-yellow-400 transition-all shadow-md"
+          />
+          {error && (
+            <p className="text-red-200 text-sm text-center mt-2 font-medium">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
+          <Button onClick={handlePlay} disabled={!name.trim()} fullWidth>
+            🎈 Jogar
+          </Button>
+
+          <Button variant="secondary" href="/ranking" fullWidth>
+            🏆 Ranking
+          </Button>
         </div>
       </main>
-    </div>
+    </>
   );
 }
