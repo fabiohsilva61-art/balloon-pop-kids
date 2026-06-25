@@ -6,25 +6,19 @@ export const GAME_CONFIG = {
   COMBO_10_BONUS: 100,
   MAX_PLAYER_NAME_LENGTH: 20,
   RANKING_TOP: 10,
+  HITS_PER_LEVEL: 8,
 } as const;
 
-export const PHASE_NAMES: Record<string, string> = {
-  letters: "Letras",
-  numbers: "Números",
-  animals: "Animais",
-  colors: "Cores",
-  shapes: "Formas",
-  mixed: "Desafio Final",
-};
-
-export const TARGET_INSTRUCTIONS: Record<string, string> = {
-  letters: "Encontre a letra",
-  numbers: "Encontre o número",
-  animals: "Encontre o animal",
-  colors: "Encontre a cor",
-  shapes: "Encontre a forma",
-  mixed: "Encontre",
-};
+export const PRAISE_MESSAGES = [
+  "Muito bem!",
+  "Excelente!",
+  "Você acertou!",
+  "Parabéns!",
+  "Incrível!",
+  "Mandou bem!",
+  "Arrasou!",
+  "Sensacional!",
+];
 
 export const BAD_WORDS = [
   "merda", "porra", "caralho", "foda", "puta", "cuzao",

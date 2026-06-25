@@ -16,15 +16,13 @@ export default function MenuPage() {
   function handlePlay() {
     const trimmed = name.trim();
     if (!trimmed) return;
-
     if (!filterBadWords(trimmed)) {
       setError("Escolha outro nome, por favor!");
       return;
     }
-
     setError("");
     const params = new URLSearchParams({ player: trimmed });
-    router.push(`/play?${params.toString()}`);
+    router.push(`/category?${params.toString()}`);
   }
 
   return (
@@ -32,7 +30,7 @@ export default function MenuPage() {
       <SoundToggle />
       <BackgroundBalloons />
 
-      <main className="relative z-10 flex flex-1 flex-col items-center justify-center gap-6 p-6">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-center gap-5 p-6">
         <div className="flex gap-3">
           <BalloonSVG color="#EF4444" size={56} delay={0} />
           <BalloonSVG color="#FACC15" size={72} delay={0.2} />
@@ -42,39 +40,33 @@ export default function MenuPage() {
         <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-lg text-center leading-tight">
           Balloon Pop
           <br />
-          <span className="text-yellow-300">Kids</span>
+          <span className="text-orange-400">Kids</span>
         </h1>
 
         <p className="text-lg md:text-xl text-white/80 text-center max-w-sm">
-          Estoure balões e aprenda letras, números, cores e animais!
+          Estoure balões e aprenda brincando!
         </p>
 
         <div className="w-full max-w-xs mt-2">
           <input
             type="text"
             value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError("");
-            }}
+            onChange={(e) => { setName(e.target.value); setError(""); }}
             onKeyDown={(e) => e.key === "Enter" && handlePlay()}
             placeholder="Seu nome ou apelido"
             maxLength={20}
             autoComplete="off"
-            className="w-full rounded-2xl bg-white/90 px-6 py-4 text-center text-xl font-medium text-gray-800 placeholder-gray-400 outline-none ring-2 ring-transparent focus:ring-yellow-400 transition-all shadow-md"
+            className="w-full rounded-2xl bg-white/90 px-6 py-4 text-center text-xl font-medium text-gray-800 placeholder-gray-400 outline-none ring-2 ring-transparent focus:ring-orange-400 transition-all shadow-md"
           />
           {error && (
-            <p className="text-red-200 text-sm text-center mt-2 font-medium">
-              {error}
-            </p>
+            <p className="text-red-200 text-sm text-center mt-2 font-medium">{error}</p>
           )}
         </div>
 
-        <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
+        <div className="flex flex-col gap-3 w-full max-w-xs mt-1">
           <Button onClick={handlePlay} disabled={!name.trim()} fullWidth>
-            🎈 Jogar
+            ▶️ Jogar
           </Button>
-
           <Button variant="secondary" href="/ranking" fullWidth>
             🏆 Ranking
           </Button>

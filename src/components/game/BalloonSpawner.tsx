@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Balloon } from "./Balloon";
-import type { BalloonData } from "@/types/game";
-import { BALLOON_COLORS, BALLOON_LABELS } from "@/types/game";
-import type { PhaseConfig } from "@/store/useGameStore";
+import type { BalloonData, Category, CategoryItem, DifficultyConfig } from "@/types/game";
+import { BALLOON_COLORS } from "@/types/game";
 
 interface BalloonSpawnerProps {
-  phase: PhaseConfig;
-  target: string;
+  category: Category;
+  target: CategoryItem | null;
+  difficultyConfig: DifficultyConfig;
   onBalloonPopped: (balloon: BalloonData) => void;
   onBalloonMissed: (balloon: BalloonData) => void;
   paused: boolean;
@@ -22,46 +22,49 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function getLabelsForPhase(phaseType: string): string[] {
-  switch (phaseType) {
-    case "letters": return BALLOON_LABELS.letters;
-    case "numbers": return BALLOON_LABELS.numbers;
-    case "animals": return BALLOON_LABELS.animals;
-    case "colors": return BALLOON_LABELS.colors;
-    case "shapes": return BALLOON_LABELS.shapes;
-    case "mixed": return [...BALLOON_LABELS.letters, ...BALLOON_LABELS.numbers, ...BALLOON_LABELS.animals];
-    default: return BALLOON_LABELS.letters;
-  }
-}
-
-function createBalloon(phase: PhaseConfig, target: string): BalloonData {
-  const labels = getLabelsForPhase(phase.type);
+function createBalloon(
+  category: Category,
+  target: CategoryItem | null,
+  cfg: DifficultyConfig,
+): BalloonData {
   const hasTarget = Math.random() < 0.35;
-  const label = hasTarget ? target : pick(labels.filter((l) => l !== target));
+  let item: CategoryItem;
+
+  if (hasTarget && target) {
+    item = target;
+  } else {
+    const others = target
+      ? category.items.filter((i) => i.label !== target.label)
+      : category.items;
+    item = pick(others.length > 0 ? others : category.items);
+  }
 
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    label: label || pick(labels),
+    label: item.label,
     color: pick(BALLOON_COLORS),
     x: rand(8, 92),
-    size: rand(70, 100),
-    speed: rand(phase.minSpeed, phase.maxSpeed),
+    size: rand(75, 110),
+    speed: rand(cfg.minSpeed, cfg.maxSpeed),
     createdAt: Date.now(),
   };
 }
 
 export function BalloonSpawner({
-  phase,
+  category,
   target,
+  difficultyConfig,
   onBalloonPopped,
   onBalloonMissed,
   paused,
 }: BalloonSpawnerProps) {
   const [balloons, setBalloons] = useState<BalloonData[]>([]);
-  const phaseRef = useRef(phase);
-  phaseRef.current = phase;
+  const categoryRef = useRef(category);
+  categoryRef.current = category;
   const targetRef = useRef(target);
   targetRef.current = target;
+  const cfgRef = useRef(difficultyConfig);
+  cfgRef.current = difficultyConfig;
   const onPoppedRef = useRef(onBalloonPopped);
   onPoppedRef.current = onBalloonPopped;
   const onMissedRef = useRef(onBalloonMissed);
@@ -69,27 +72,23 @@ export function BalloonSpawner({
 
   useEffect(() => {
     if (paused) return;
-
     const interval = setInterval(() => {
       setBalloons((prev) => {
-        if (prev.length >= phaseRef.current.maxBalloons) return prev;
-        return [...prev, createBalloon(phaseRef.current, targetRef.current)];
+        if (prev.length >= cfgRef.current.maxBalloons) return prev;
+        return [...prev, createBalloon(categoryRef.current, targetRef.current, cfgRef.current)];
       });
-    }, phase.spawnInterval);
-
+    }, difficultyConfig.spawnInterval);
     return () => clearInterval(interval);
-  }, [paused, phase.spawnInterval]);
+  }, [paused, difficultyConfig.spawnInterval]);
 
   useEffect(() => {
     if (paused) return;
-
     const cleanup = setInterval(() => {
       setBalloons((prev) => {
         const now = Date.now();
         const remaining: BalloonData[] = [];
         for (const b of prev) {
-          const elapsed = (now - b.createdAt) / 1000;
-          if (elapsed > b.speed + 0.5) {
+          if ((now - b.createdAt) / 1000 > b.speed + 0.5) {
             onMissedRef.current(b);
           } else {
             remaining.push(b);
@@ -98,7 +97,6 @@ export function BalloonSpawner({
         return remaining.length !== prev.length ? remaining : prev;
       });
     }, 500);
-
     return () => clearInterval(cleanup);
   }, [paused]);
 

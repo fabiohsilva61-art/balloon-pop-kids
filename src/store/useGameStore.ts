@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import type { BalloonData } from "@/types/game";
-import { BALLOON_LABELS } from "@/types/game";
+import type { BalloonData, CategoryType, Category, CategoryItem, Difficulty, DifficultyConfig } from "@/types/game";
+import { CATEGORIES, DIFFICULTIES } from "@/types/game";
+import { GAME_CONFIG } from "@/lib/constants";
 
 export interface Achievement {
   id: string;
@@ -16,33 +17,19 @@ const INITIAL_ACHIEVEMENTS: Achievement[] = [
   { id: "score_100", title: "100 Pontos", description: "Alcance 100 pontos", icon: "💯", unlocked: false },
   { id: "score_500", title: "500 Pontos", description: "Alcance 500 pontos", icon: "🌟", unlocked: false },
   { id: "score_1000", title: "Campeão", description: "Alcance 1000 pontos", icon: "🏆", unlocked: false },
-  { id: "master_letters", title: "Mestre das Letras", description: "Acerte 10 letras", icon: "🔤", unlocked: false },
-  { id: "master_numbers", title: "Mestre dos Números", description: "Acerte 10 números", icon: "🔢", unlocked: false },
-  { id: "master_animals", title: "Mestre dos Animais", description: "Acerte 10 animais", icon: "🐾", unlocked: false },
   { id: "combo_master", title: "Combo Master", description: "Faça um combo de 10", icon: "🔥", unlocked: false },
+  { id: "perfect_round", title: "Rodada Perfeita", description: "Complete uma fase sem errar", icon: "⭐", unlocked: false },
 ];
 
-export type PhaseType = "letters" | "numbers" | "animals" | "colors" | "shapes" | "mixed";
-
-export interface PhaseConfig {
-  type: PhaseType;
-  name: string;
-  target: string;
-  requiredHits: number;
-  spawnInterval: number;
-  minSpeed: number;
-  maxSpeed: number;
-  maxBalloons: number;
+export interface GameStats {
+  totalCorrect: number;
+  totalWrong: number;
+  startTime: number;
+  endTime: number;
+  categoryPlayed: CategoryType;
+  difficulty: Difficulty;
+  bestScore: number;
 }
-
-const PHASES: PhaseConfig[] = [
-  { type: "letters", name: "Letras", target: "", requiredHits: 5, spawnInterval: 1400, minSpeed: 5, maxSpeed: 8, maxBalloons: 6 },
-  { type: "numbers", name: "Números", target: "", requiredHits: 6, spawnInterval: 1300, minSpeed: 5, maxSpeed: 7.5, maxBalloons: 7 },
-  { type: "animals", name: "Animais", target: "", requiredHits: 7, spawnInterval: 1200, minSpeed: 4.5, maxSpeed: 7, maxBalloons: 7 },
-  { type: "colors", name: "Cores", target: "", requiredHits: 8, spawnInterval: 1100, minSpeed: 4, maxSpeed: 6.5, maxBalloons: 8 },
-  { type: "shapes", name: "Formas", target: "", requiredHits: 9, spawnInterval: 1000, minSpeed: 3.5, maxSpeed: 6, maxBalloons: 9 },
-  { type: "mixed", name: "Desafio Final", target: "", requiredHits: 10, spawnInterval: 900, minSpeed: 3, maxSpeed: 5.5, maxBalloons: 10 },
-];
 
 interface GameState {
   playerName: string;
@@ -50,55 +37,51 @@ interface GameState {
   lives: number;
   combo: number;
   maxCombo: number;
-  phase: number;
-  phaseHits: number;
-  currentTarget: string;
+  level: number;
+  levelHits: number;
+  currentTarget: CategoryItem | null;
   totalPopped: number;
-  letterHits: number;
-  numberHits: number;
-  animalHits: number;
+  totalWrong: number;
   gameOver: boolean;
   paused: boolean;
   achievements: Achievement[];
   newAchievement: Achievement | null;
-  phases: PhaseConfig[];
+  category: Category;
+  difficultyConfig: DifficultyConfig;
+  difficultyType: Difficulty;
+  stats: GameStats | null;
+  levelErrors: number;
 
-  setPlayerName: (name: string) => void;
-  startGame: (name: string) => void;
+  startGame: (name: string, categoryType: CategoryType, difficulty: Difficulty) => void;
   handleCorrectPop: (balloon: BalloonData) => void;
   handleWrongPop: (balloon: BalloonData) => void;
   nextTarget: () => void;
-  advancePhase: () => void;
+  advanceLevel: () => void;
   dismissAchievement: () => void;
-  reset: () => void;
-  getCurrentPhase: () => PhaseConfig;
-}
-
-function isLetter(label: string) {
-  return /^[A-Z]$/.test(label);
-}
-
-function isNumber(label: string) {
-  return /^[0-9]$/.test(label);
-}
-
-function isAnimal(label: string) {
-  return ["🐶", "🐱", "🐸", "🐰", "🐻", "🦁", "🐧", "🐢", "🦋", "🐝"].includes(label);
+  getCurrentInstruction: () => string;
 }
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function generateTarget(phaseType: PhaseType): string {
-  switch (phaseType) {
-    case "letters": return pickRandom(BALLOON_LABELS.letters);
-    case "numbers": return pickRandom(BALLOON_LABELS.numbers);
-    case "animals": return pickRandom(BALLOON_LABELS.animals);
-    case "colors": return pickRandom(BALLOON_LABELS.colors);
-    case "shapes": return pickRandom(BALLOON_LABELS.shapes);
-    case "mixed": return pickRandom([...BALLOON_LABELS.letters, ...BALLOON_LABELS.numbers, ...BALLOON_LABELS.animals]);
-  }
+function generateTarget(category: Category): CategoryItem {
+  return pickRandom(category.items);
+}
+
+function getInstruction(categoryType: CategoryType, item: CategoryItem): string {
+  const prefix: Record<CategoryType, string> = {
+    numbers: "Toque no balão que contém o número",
+    letters: "Toque no balão que contém a letra",
+    animals: "Toque no balão do",
+    fruits: "Toque no balão da",
+    vehicles: "Toque no balão do",
+    flags: "Toque na bandeira do",
+    colors: "Toque no balão da cor",
+    shapes: "Toque no balão do",
+  };
+  const useDisplay = ["animals", "fruits", "vehicles", "flags", "colors", "shapes"].includes(categoryType);
+  return `${prefix[categoryType]} ${useDisplay ? item.displayName : item.label}`;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -107,44 +90,57 @@ export const useGameStore = create<GameState>((set, get) => ({
   lives: 3,
   combo: 0,
   maxCombo: 0,
-  phase: 0,
-  phaseHits: 0,
-  currentTarget: "",
+  level: 1,
+  levelHits: 0,
+  currentTarget: null,
   totalPopped: 0,
-  letterHits: 0,
-  numberHits: 0,
-  animalHits: 0,
+  totalWrong: 0,
   gameOver: false,
   paused: false,
   achievements: [...INITIAL_ACHIEVEMENTS],
   newAchievement: null,
-  phases: PHASES,
+  category: CATEGORIES[0],
+  difficultyConfig: DIFFICULTIES.easy,
+  difficultyType: "easy",
+  stats: null,
+  levelErrors: 0,
 
-  setPlayerName: (name) => set({ playerName: name }),
-
-  startGame: (name) => {
-    const target = generateTarget(PHASES[0].type);
+  startGame: (name, categoryType, difficulty) => {
+    const category = CATEGORIES.find((c) => c.type === categoryType) || CATEGORIES[0];
+    const target = generateTarget(category);
+    const diffConfig = DIFFICULTIES[difficulty];
     set({
       playerName: name,
       score: 0,
-      lives: 3,
+      lives: GAME_CONFIG.MAX_LIVES,
       combo: 0,
       maxCombo: 0,
-      phase: 0,
-      phaseHits: 0,
+      level: 1,
+      levelHits: 0,
       currentTarget: target,
       totalPopped: 0,
-      letterHits: 0,
-      numberHits: 0,
-      animalHits: 0,
+      totalWrong: 0,
       gameOver: false,
       paused: false,
       achievements: [...INITIAL_ACHIEVEMENTS],
       newAchievement: null,
+      category,
+      difficultyConfig: diffConfig,
+      difficultyType: difficulty,
+      stats: {
+        totalCorrect: 0,
+        totalWrong: 0,
+        startTime: Date.now(),
+        endTime: 0,
+        categoryPlayed: categoryType,
+        difficulty,
+        bestScore: 0,
+      },
+      levelErrors: 0,
     });
   },
 
-  handleCorrectPop: (balloon) => {
+  handleCorrectPop: (_balloon) => {
     const state = get();
     if (state.gameOver) return;
 
@@ -154,24 +150,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     else if (newCombo === 10) bonus = 100;
     else if (newCombo > 10 && newCombo % 5 === 0) bonus = 50;
 
-    const newScore = state.score + 10 + bonus;
+    const newScore = state.score + GAME_CONFIG.POINTS_CORRECT + bonus;
     const newPopped = state.totalPopped + 1;
-    const newPhaseHits = state.phaseHits + 1;
+    const newLevelHits = state.levelHits + 1;
     const newMaxCombo = Math.max(state.maxCombo, newCombo);
-
-    let newLetterHits = state.letterHits;
-    let newNumberHits = state.numberHits;
-    let newAnimalHits = state.animalHits;
-
-    if (isLetter(balloon.label)) newLetterHits++;
-    else if (isNumber(balloon.label)) newNumberHits++;
-    else if (isAnimal(balloon.label)) newAnimalHits++;
 
     const achievements = [...state.achievements];
     let newAchievement: Achievement | null = null;
 
     function unlock(id: string) {
-      const a = achievements.find((a) => a.id === id);
+      const a = achievements.find((x) => x.id === id);
       if (a && !a.unlocked) {
         a.unlocked = true;
         a.unlockedAt = Date.now();
@@ -183,32 +171,31 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (newScore >= 100) unlock("score_100");
     if (newScore >= 500) unlock("score_500");
     if (newScore >= 1000) unlock("score_1000");
-    if (newLetterHits >= 10) unlock("master_letters");
-    if (newNumberHits >= 10) unlock("master_numbers");
-    if (newAnimalHits >= 10) unlock("master_animals");
     if (newCombo >= 10) unlock("combo_master");
 
-    const currentPhase = PHASES[state.phase];
-    let shouldAdvance = false;
-    if (newPhaseHits >= currentPhase.requiredHits && state.phase < PHASES.length - 1) {
-      shouldAdvance = true;
+    const shouldAdvance = newLevelHits >= GAME_CONFIG.HITS_PER_LEVEL;
+
+    if (shouldAdvance && state.levelErrors === 0) {
+      unlock("perfect_round");
     }
+
+    const newStats = state.stats
+      ? { ...state.stats, totalCorrect: state.stats.totalCorrect + 1, bestScore: Math.max(state.stats.bestScore, newScore) }
+      : null;
 
     set({
       score: newScore,
       combo: newCombo,
       maxCombo: newMaxCombo,
       totalPopped: newPopped,
-      phaseHits: newPhaseHits,
-      letterHits: newLetterHits,
-      numberHits: newNumberHits,
-      animalHits: newAnimalHits,
+      levelHits: newLevelHits,
       achievements,
       newAchievement,
+      stats: newStats,
     });
 
     if (shouldAdvance) {
-      setTimeout(() => get().advancePhase(), 500);
+      setTimeout(() => get().advanceLevel(), 600);
     } else {
       get().nextTarget();
     }
@@ -218,32 +205,45 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     if (state.gameOver) return;
 
-    const newScore = Math.max(0, state.score - 5);
+    const newScore = Math.max(0, state.score + GAME_CONFIG.POINTS_WRONG);
     const newLives = state.lives - 1;
+    const newTotalWrong = state.totalWrong + 1;
+    const isGameOver = newLives <= 0;
+
+    const newStats = state.stats
+      ? {
+          ...state.stats,
+          totalWrong: state.stats.totalWrong + 1,
+          endTime: isGameOver ? Date.now() : 0,
+          bestScore: Math.max(state.stats.bestScore, state.score),
+        }
+      : null;
 
     set({
       score: newScore,
       combo: 0,
       lives: newLives,
-      gameOver: newLives <= 0,
-      paused: newLives <= 0,
+      totalWrong: newTotalWrong,
+      gameOver: isGameOver,
+      paused: isGameOver,
+      levelErrors: state.levelErrors + 1,
+      stats: newStats,
     });
   },
 
   nextTarget: () => {
     const state = get();
-    const phase = PHASES[state.phase];
-    set({ currentTarget: generateTarget(phase.type) });
+    set({ currentTarget: generateTarget(state.category) });
   },
 
-  advancePhase: () => {
+  advanceLevel: () => {
     const state = get();
-    const nextPhase = state.phase + 1;
-    if (nextPhase >= PHASES.length) return;
-    const target = generateTarget(PHASES[nextPhase].type);
+    const newLevel = state.level + 1;
+    const target = generateTarget(state.category);
     set({
-      phase: nextPhase,
-      phaseHits: 0,
+      level: newLevel,
+      levelHits: 0,
+      levelErrors: 0,
       currentTarget: target,
       paused: true,
     });
@@ -252,25 +252,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   dismissAchievement: () => set({ newAchievement: null }),
 
-  reset: () => {
-    set({
-      score: 0,
-      lives: 3,
-      combo: 0,
-      maxCombo: 0,
-      phase: 0,
-      phaseHits: 0,
-      currentTarget: "",
-      totalPopped: 0,
-      letterHits: 0,
-      numberHits: 0,
-      animalHits: 0,
-      gameOver: false,
-      paused: false,
-      achievements: [...INITIAL_ACHIEVEMENTS],
-      newAchievement: null,
-    });
+  getCurrentInstruction: () => {
+    const state = get();
+    if (!state.currentTarget) return "";
+    return getInstruction(state.category.type, state.currentTarget);
   },
-
-  getCurrentPhase: () => PHASES[get().phase],
 }));

@@ -8,7 +8,6 @@ class AudioManager {
 
   private getOrCreate(name: string, src: string, poolSize = 3): HTMLAudioElement[] {
     if (this.sounds.has(name)) return this.sounds.get(name)!;
-
     const pool: HTMLAudioElement[] = [];
     for (let i = 0; i < poolSize; i++) {
       const audio = new Audio(src);
@@ -22,7 +21,6 @@ class AudioManager {
 
   play(name: string) {
     if (!this.enabled) return;
-
     const srcMap: Record<string, string> = {
       pop: "/sounds/pop.mp3",
       wrong: "/sounds/wrong.mp3",
@@ -31,14 +29,23 @@ class AudioManager {
       gameOver: "/sounds/game-over.mp3",
       phaseUp: "/sounds/phase-up.mp3",
     };
-
     const src = srcMap[name];
     if (!src) return;
-
     const pool = this.getOrCreate(name, src);
     const available = pool.find((a) => a.paused || a.ended) || pool[0];
     available.currentTime = 0;
     available.play().catch(() => {});
+  }
+
+  speak(text: string) {
+    if (!this.enabled) return;
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "pt-BR";
+    utterance.rate = 0.85;
+    utterance.pitch = 1.2;
+    window.speechSynthesis.speak(utterance);
   }
 }
 
